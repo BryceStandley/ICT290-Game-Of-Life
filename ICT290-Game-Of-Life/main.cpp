@@ -27,12 +27,14 @@
 typedef unsigned char pixel;
 
 void display(void);
-void reshape(int, int);
+//void reshape(int, int);
 bool readConfig(void);
 void elementryCA(void);
 void drawCA(void);
 void init(void);
-void generatePixels(int, int, int, int);
+void timer(int);
+int countneighbors(int, int);
+void generateRandomStates(void);
 
 std::string configFileName = "gol_cfg.txt";
 int gridSizeSquare;
@@ -52,7 +54,7 @@ int main(int argc, char** argv)
     //{    
     //}
 
-    elementryCA();
+    
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DEPTH | GLUT_RGB);
@@ -72,72 +74,28 @@ int main(int argc, char** argv)
 
 void init()
 {
-    
-   
-    
+    generateRandomStates();
 
     glutDisplayFunc(display);
     glutIdleFunc(display);
-    
+    glutTimerFunc(500, timer, 0);
+}
 
-    
-    /*
-    glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH);
-    glutInitWindowSize(ScreenWidth, ScreenHeight);
-    glutCreateWindow("Conway's Game Of Life - OpenGL - ICT290 - Bryce Standley");
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glutDisplayFunc(display);
-    //glutTimerFunc(1000 / 60, timer, 0);
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluOrtho2D(0.0f, (float)ScreenWidth, 0.0f, (float)ScreenHeight);
-    glTranslatef(0, 0, -20);
-    */
+void timer(int time)
+{
+    elementryCA();
+    glutTimerFunc(500, timer, 0);
 }
 
 void display()
 {
-
-
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     glLoadIdentity();
-    //glTranslatef(0, 0, -10);
 
     drawCA();
-/*
-    GLdouble x = -1;
-    GLdouble y = 1;
-    GLdouble yPos = 1.0 / row;
-    GLdouble xPos = 1.0 / col;
 
-    //std::cout << "xPos: " << (double)xPos << std::endl;
-    
-    //glColor3f(1, 1, 1);
-    glBegin(GL_TRIANGLES);
-    glVertex3f(x, y, 0);
-    glVertex3f(x, y - yPos, 0);
-    glVertex3f(x + xPos, y - yPos, 0);
-
-    glVertex3f(x, y, 0);
-    glVertex3f(x + xPos, y - yPos, 0);
-    glVertex3f(x + xPos, y, 0);
-    glEnd();
-    
-    glBegin(GL_TRIANGLES); // Triangles
-    glVertex2d(x, y); // top left 1 0,0
-
-    glVertex2d(x, y - yPos); //bottom left 2 0,-1
-    glVertex2d(x + xPos, y - yPos); //bottom right 3 1,-1
-
-    glVertex2d(x, y); // top left 1 0,0
-    glVertex2d(x + xPos, y - yPos); //bottom right 3 1,-1
-    glVertex2d(x + xPos, y); //top left 4 1,0
-    glEnd();
-    */
-
-    //glDrawPixels(col, row, GL_LUMINANCE, GL_UNSIGNED_BYTE, image_buffer);
     glFlush();
 }
 
@@ -181,20 +139,70 @@ bool readConfig()
     }
 }
 
-
-void elementryCA()
+void generateRandomStates()
 {
     for (int i = 0; i < col; i++)
     {
-        std::cout << std::endl;
         for (int j = 0; j < row; j++)
         {
             grid[i][j] = rand() % 2;
-            std::cout << grid[i][j];
-
         }
-        
     }
+}
+
+void elementryCA()
+{
+    int nextGen[col][row];
+
+    for (int i = 0; i < col; i++)
+    {
+        for (int j = 0; j < row; j++)
+        {
+            int state = grid[i][j];
+
+            int neighbors = countneighbors(i, j);
+
+
+            if (state == 0 && neighbors == 3)
+            {
+                nextGen[i][j] = 1;
+            }
+            else if (state == 1 && (neighbors < 2 || neighbors > 3))
+            {
+                nextGen[i][j] = 0;
+            }
+            else
+            {
+                nextGen[i][j] = state;
+            }
+            
+        }
+    }
+
+    for (int i = 0; i < col; i++)
+    {
+        for (int j = 0; j < row; j++)
+        {
+            grid[i][j] = nextGen[i][j];
+        }
+    }
+}
+
+int countneighbors(int x, int y)
+{
+    int sum = 0;
+    for (int i = -1; i < 2; i++)
+    {
+        for (int j = -1; j < 2; j++)
+        {
+            int wrapCol = (x + i + col) % col;
+            int wrapRow = (y + j + row) % row;
+
+            sum += grid[wrapCol][wrapRow];
+        }
+    }
+    sum -= grid[x][y];
+    return sum;
 }
 
 void drawCA()
@@ -202,20 +210,17 @@ void drawCA()
     GLdouble x = -1;
     GLdouble y = 1;
 
-    GLdouble yPos = 1.0 / row;
-    GLdouble xPos = 1.0 / col;
+    GLdouble yPos = 2.0 / row;
+    GLdouble xPos = 2.0 / col;
 
+    x -= xPos;
     for (int i = 0; i < col; i++)
     {
-        
         x += xPos;
         y = 1;
         //std::cout << std::endl;
         for (int j = 0; j < row; j++)
         {
-            
-            
-
             if (grid[i][j] == 1)
             {
                 glColor3f(1, 1, 1);
@@ -236,22 +241,5 @@ void drawCA()
             glEnd();
             y -= yPos;
         }
-        
-
-    }
-    
-    
+    } 
 }
-
-void generatePixels(int xOff, int yOff, int width, int height)
-{
-    int offset = 0;
-    for (int r = row - 1; r >= 0; r--) {
-        for (int c = 0; c < col; c++) {
-            image_buffer[col * offset + c] = grid[c][r];
-            LOG("image buffer: ", image_buffer[col * offset + c]);
-        }
-        offset++;
-    }
-}
-
